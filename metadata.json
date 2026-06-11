@@ -1,0 +1,8 @@
+{
+  "name": "Teyzix Analytics",
+  "description": "An executive Power BI and Tableau-style corporate dashboard using React, Tailwind, and Recharts, integrated with a server-side Gemini AI Copilot for immediate, data-grounded performance evaluations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
