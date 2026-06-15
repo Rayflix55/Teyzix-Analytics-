@@ -1,13 +1,7 @@
-import express from 'express';
-import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const app = express();
-app.use(express.json());
-
-// Simple mock data (no external file dependencies)
 const getBaseDashboardData = () => ({
   kpis: {
     revenue: {
@@ -159,18 +153,56 @@ const emptyDashboardData = () => ({
   recentTransactions: [],
 });
 
-app.get('/api/dashboard-data', (req, res) => {
-  const requestEmpty = req.query.empty === 'true';
+const handleDashboardData = (query: Record<string, any> | undefined) => {
+  const requestEmpty = query?.empty === 'true';
   if (requestEmpty) {
-    return res.json(emptyDashboardData());
+    return emptyDashboardData();
   }
-  return res.json(getBaseDashboardData());
-});
+  return getBaseDashboardData();
+};
 
-app.post('/api/copilot', (req, res) => {
-  const { message } = req.body;
+const handleCopilot = async (body: any) => {
+  const message = body?.message || '';
   const fallback = `### Analytics Response\n\nYou asked: "${message}"\n\nCurrent metrics: Revenue $12,368, Orders 355.`;
-  return res.json({ success: true, text: fallback });
-});
+  return { success: true, text: fallback };
+};
 
-export default app;
+export default async function handler(req: any, res: any) {
+  try {
+    if (req.method === 'GET') {
+      const payload = handleDashboardData(req.query);
+      return res.status(200).json(payload);
+    }
+
+    if (req.method === 'POST') {
+      const body =
+        req.body && Object.keys(req.body).length > 0
+          ? req.body
+          : await parseJsonBody(req);
+      const payload = await handleCopilot(body);
+      return res.status(200).json(payload);
+    }
+
+    res.setHeader('Allow', ['GET', 'POST']);
+    return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Internal server error' });
+  }
+}
+
+async function parseJsonBody(req: any) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk: Buffer) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body || '{}'));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on('error', reject);
+  });
+}
