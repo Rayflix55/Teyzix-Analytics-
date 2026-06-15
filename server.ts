@@ -42,11 +42,11 @@ app.get("/api/dashboard-data", async (req, res) => {
     const triggerError = req.query.error === "true";
     const requestEmpty = req.query.empty === "true";
 
-    // Simulate Network Delay if requested
     if (delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
 
+    // Simulate Server-side Error if requested
     if (triggerError) {
       return res.status(500).json({
         success: false,
@@ -55,12 +55,10 @@ app.get("/api/dashboard-data", async (req, res) => {
       });
     }
 
-    // Return Empty State if requested
     if (requestEmpty) {
       return res.json(emptyDashboardData());
     }
 
-    // Normal State
     return res.json(getBaseDashboardData());
   } catch (error: any) {
     return res.status(500).json({
@@ -72,6 +70,7 @@ app.get("/api/dashboard-data", async (req, res) => {
   }
 });
 
+// 2. Server-side Gemini BI AI Copilot API
 async function generateContentWithRetry(
   ai: any,
   params: any,
@@ -250,7 +249,6 @@ Thank you for your inquiry about current company analytics. Here is what stands 
       .json({ success: false, message: "Copilot error: " + err.message });
   }
 });
-
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -266,9 +264,13 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server is running at http://localhost:${PORT}/`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server is running at http://localhost:${PORT}/`);
+    });
+  }
 }
 
 startServer();
+
+export default app;
