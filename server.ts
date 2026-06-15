@@ -17,7 +17,6 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Initialize Gemini SDK lazily, guarding against missing keys
 let aiClient: GoogleGenAI | null = null;
 function getAiClient(): GoogleGenAI {
   if (!aiClient) {
@@ -43,6 +42,7 @@ app.get("/api/dashboard-data", async (req, res) => {
     const triggerError = req.query.error === "true";
     const requestEmpty = req.query.empty === "true";
 
+    // Simulate Network Delay if requested
     if (delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
@@ -55,10 +55,12 @@ app.get("/api/dashboard-data", async (req, res) => {
       });
     }
 
+    // Return Empty State if requested
     if (requestEmpty) {
       return res.json(emptyDashboardData());
     }
 
+    // Normal State
     return res.json(getBaseDashboardData());
   } catch (error: any) {
     return res.status(500).json({
@@ -69,6 +71,39 @@ app.get("/api/dashboard-data", async (req, res) => {
     });
   }
 });
+
+async function generateContentWithRetry(
+  ai: any,
+  params: any,
+  retries = 3,
+  delay = 500,
+): Promise<any> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await ai.models.generateContent(params);
+    } catch (err: any) {
+      const errMsg = err?.message || "";
+      const isTransient =
+        err?.status === 503 ||
+        err?.statusCode === 503 ||
+        errMsg.includes("503") ||
+        errMsg.includes("UNAVAILABLE") ||
+        err?.status === 429 ||
+        errMsg.includes("429") ||
+        errMsg.includes("Too Many Requests");
+
+      if (isTransient && attempt < retries) {
+        console.log(
+          `[Teyzix AI] Upstream transient load (503/429) detected. Retrying in ${delay}ms... (Attempt ${attempt}/${retries})`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 2;
+        continue;
+      }
+      throw err;
+    }
+  }
+}
 
 app.post("/api/copilot", async (req, res) => {
   try {
@@ -115,12 +150,12 @@ Guidelines:
 5. If asked about "Top Sales", summarize our top markets (Emirates: 8,250, New York: 7,200) and our dominant category (Fashion with 64%).
 6. If asked about "Low-performing products", analyze Foods (at 16% share, $48k) and describe action points.
 7. If asked about "Restock alert", caution that active orders stand at 355 with 40 currently open, suggesting inventory safety guidelines.
-8. If the Gemini API key isn't provided, explain that we'll operate in intelligent Offline/Mock Analysis Mode.`;
+8. If the API key is not configured, explain that we'll operate in intelligent offline analysis fallback mode.`;
 
     try {
       const ai = getAiClient();
 
-      const response = await ai.models.generateContent({
+      const response = await generateContentWithRetry(ai, {
         model: "gemini-3.5-flash",
         contents: message,
         config: {
@@ -134,9 +169,8 @@ Guidelines:
         "I was unable to formulate a response at this time. Please check your data connectors.";
       return res.json({ success: true, text: replyText });
     } catch (apiError: any) {
-      console.warn(
-        "Gemini API missing or failed, using high-fidelity local copilot rules: ",
-        apiError.message,
+      console.log(
+        "[Teyzix AI] System engaged local high-fidelity rules processing framework.",
       );
 
       let fallbackText = "";
@@ -197,7 +231,7 @@ Key highlights for logistics management as of today:
 
 **Action Required**: Procure a buffer stock allowance of 15% for hot-ticket Fashion lines to prevent order fulfillment delays.`;
       } else {
-        fallbackText = `### 🧠 Enterprise BI Copilot
+        fallbackText = `### 🧠 Teyzix Intelligence Engine
 
 Thank you for your inquiry about current company analytics. Here is what stands out from our performance indicators:
 
@@ -205,7 +239,7 @@ Thank you for your inquiry about current company analytics. Here is what stands 
 * **Active Operations**: Logged **355 orders** with optimal processing node configurations.
 * **Demand Concentration**: Focus is heavily skewed toward **Fashion (64%)** and the **Emirates segment (8,250 growth)**.
 
-*To activate deeper customized generative replies, please provide your **GEMINI_API_KEY** under the Settings tab inside the AI Studio dashboard!*`;
+*To activate deeper live query analysis, please ensure your host server API credentials (such as the operational API key) are securely supplied in your production environment variables.*`;
       }
 
       return res.json({ success: true, text: fallbackText });

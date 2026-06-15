@@ -147,7 +147,7 @@ export default function CopilotWidget() {
       className="bg-white/95 dark:bg-zinc-900/90 border border-zinc-200/50 dark:border-zinc-800/40 p-4 md:p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col justify-between min-h-[380px] xl:min-h-[460px]"
       id="copilot-widget-container"
     >
-      {/* Widget Header with clean layout */}
+      {/* Widget Header*/}
       <div className="flex justify-between items-center border-b border-zinc-200/40 dark:border-zinc-850/30 pb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shadow-md">
@@ -158,7 +158,7 @@ export default function CopilotWidget() {
               {t.copilotTitle}
             </h3>
             <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono font-bold uppercase tracking-wider block">
-              AI Assistant
+              Teyzix Intelligence Engine
             </span>
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function CopilotWidget() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* Dynamic Action Chips */}
+      {/* Dynamic Action Chips  */}
       <div className="mb-2.5 pb-2 border-b border-zinc-100 dark:border-zinc-850/30">
         <div className="grid grid-cols-2 gap-1.5">
           {quickPrompts.map((p, idx) => {
