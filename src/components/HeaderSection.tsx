@@ -42,6 +42,26 @@ export default function HeaderSection() {
     setSelectedCompanyInfoId,
   } = useDashboardStore();
 
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
+
   const t = translations[language];
 
   const companyList = React.useMemo(() => {
@@ -149,35 +169,49 @@ export default function HeaderSection() {
             <RefreshCw className="w-4 h-4" />
           </button>
 
-          <div className="relative group">
+          <div className="relative" ref={dropdownRef}>
             <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 bg-white/50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
               id="language-dropdown-trigger"
             >
               <Globe className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="uppercase">{language}</span>
+              <span className="uppercase">
+                {language === "en_in" ? "en-IN" : language}
+              </span>
             </button>
-            <div
-              className="absolute right-0 top-full mt-1.5 w-32 hidden group-hover:flex flex-col bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl shadow-xl z-50 overflow-hidden transform duration-200"
-              id="language-list"
-            >
-              {(["en", "de", "fr", "es"] as const).map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => setLanguage(lang)}
-                  className={`px-3 py-2 text-xs text-left cursor-pointer transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900 ${
-                    language === lang
-                      ? "font-bold text-indigo-650 bg-indigo-50/50 dark:bg-indigo-950/20"
-                      : "text-zinc-700 dark:text-zinc-300"
-                  }`}
-                >
-                  {lang === "en" && "🇺🇸 English"}
-                  {lang === "de" && "🇩🇪 Deutsch"}
-                  {lang === "fr" && "🇫🇷 Français"}
-                  {lang === "es" && "🇪🇸 Español"}
-                </button>
-              ))}
-            </div>
+            {isDropdownOpen && (
+              <div
+                className="absolute right-0 top-full mt-1.5 w-44 flex flex-col bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl shadow-xl z-50 overflow-hidden transform duration-200"
+                id="language-list"
+              >
+                {(
+                  ["en", "en_in", "hi", "ja", "zh", "de", "fr", "es"] as const
+                ).map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => {
+                      setLanguage(lang);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`px-3 py-2 text-xs text-left cursor-pointer transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900 ${
+                      language === lang
+                        ? "font-bold text-indigo-650 bg-indigo-50/50 dark:bg-indigo-950/20"
+                        : "text-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    {lang === "en" && "🇺🇸 English"}
+                    {lang === "en_in" && "🇮🇳 English (India)"}
+                    {lang === "hi" && "🇮🇳 हिन्दी (Hindi)"}
+                    {lang === "ja" && "🇯🇵 日本語"}
+                    {lang === "zh" && "🇨🇳 中文 (Chinese)"}
+                    {lang === "de" && "🇩🇪 Deutsch"}
+                    {lang === "fr" && "🇫🇷 Français"}
+                    {lang === "es" && "🇪🇸 Español"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <button

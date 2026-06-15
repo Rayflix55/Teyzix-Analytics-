@@ -13,7 +13,7 @@ import {
 
 interface DashboardState {
   theme: "light" | "dark";
-  language: "en" | "de" | "fr" | "es";
+  language: "en" | "en_in" | "hi" | "ja" | "zh" | "de" | "fr" | "es";
   isLoading: boolean;
   error: string | null;
   data: DashboardData | null;
@@ -37,7 +37,7 @@ interface DashboardState {
   searchQuery: string;
   selectedRegion: "All" | Region;
   selectedStatus: "All" | CustomerStatus;
-  revenueRange: [number, number]; // [min, max]
+  revenueRange: [number, number];
   currentPage: number;
   pageSize: number;
   sortBy: "name" | "revenue" | "orders" | "status" | "region";
@@ -47,7 +47,9 @@ interface DashboardState {
   isChatLoading: boolean;
 
   toggleTheme: () => void;
-  setLanguage: (lang: "en" | "de" | "fr" | "es") => void;
+  setLanguage: (
+    lang: "en" | "en_in" | "hi" | "ja" | "zh" | "de" | "fr" | "es",
+  ) => void;
   setActiveTab: (
     tab:
       | "overview"
@@ -81,8 +83,15 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   theme:
     (localStorage.getItem("bi-dashboard-theme") as "light" | "dark") || "light",
   language:
-    (localStorage.getItem("bi-dashboard-lang") as "en" | "de" | "fr" | "es") ||
-    "en",
+    (localStorage.getItem("bi-dashboard-lang") as
+      | "en"
+      | "en_in"
+      | "hi"
+      | "ja"
+      | "zh"
+      | "de"
+      | "fr"
+      | "es") || "en",
   isLoading: false,
   error: null,
   data: null,
@@ -92,7 +101,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   isSimulatedEmpty: false,
   isSimulatedError: false,
-  simulatedDelay: 400, // standard UX responsive buffer
+  simulatedDelay: 400,
 
   searchQuery: "",
   selectedRegion: "All",
@@ -119,7 +128,6 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   toggleTheme: () => {
     const nextTheme = get().theme === "light" ? "dark" : "light";
     localStorage.setItem("bi-dashboard-theme", nextTheme);
-
     if (nextTheme === "dark") {
       document.documentElement.classList.add("dark");
     } else {
