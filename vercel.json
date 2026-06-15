@@ -1,23 +1,28 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/index.html"
+    }
+  ],
   "builds": [
     {
-      "src": "server.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     },
     {
       "src": "dist/**",
       "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/server.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/index.html"
     }
   ]
 }
