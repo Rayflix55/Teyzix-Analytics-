@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "vercel-build": "npm run build",
-    "start": "vite preview",
+    "start": "node api/index.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
