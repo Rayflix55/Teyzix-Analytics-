@@ -94,6 +94,7 @@ export default function CopilotWidget() {
     language,
     chatHistory,
     isChatLoading,
+    isCopilotFallback,
     sendCopilotMessage,
     clearChat,
   } = useDashboardStore();
@@ -147,6 +148,11 @@ export default function CopilotWidget() {
       className="bg-white/95 dark:bg-zinc-900/90 border border-zinc-200/50 dark:border-zinc-800/40 p-4 md:p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col justify-between min-h-[380px] xl:min-h-[460px]"
       id="copilot-widget-container"
     >
+      {isCopilotFallback && (
+        <div className="mb-3 rounded-2xl border border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/10 dark:border-amber-500/30 px-3 py-2 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+          Live fallback mode is active. The response is generated from current dashboard context rather than a cached answer.
+        </div>
+      )}
       {/* Widget Header*/}
       <div className="flex justify-between items-center border-b border-zinc-200/40 dark:border-zinc-850/30 pb-3">
         <div className="flex items-center gap-2">

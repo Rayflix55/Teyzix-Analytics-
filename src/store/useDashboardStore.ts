@@ -45,6 +45,7 @@ interface DashboardState {
 
   chatHistory: ChatMessage[];
   isChatLoading: boolean;
+  isCopilotFallback: boolean;
 
   toggleTheme: () => void;
   setLanguage: (
@@ -124,6 +125,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     },
   ],
   isChatLoading: false,
+  isCopilotFallback: false,
 
   toggleTheme: () => {
     const nextTheme = get().theme === "light" ? "dark" : "light";
@@ -270,6 +272,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       set((state) => ({
         chatHistory: [...state.chatHistory, copilotMsg],
         isChatLoading: false,
+        isCopilotFallback: reply.fallback === true,
       }));
     } catch (err: any) {
       const errorMsg: ChatMessage = {
@@ -285,6 +288,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       set((state) => ({
         chatHistory: [...state.chatHistory, errorMsg],
         isChatLoading: false,
+        isCopilotFallback: false,
       }));
     }
   },

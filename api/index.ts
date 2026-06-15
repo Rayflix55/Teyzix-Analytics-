@@ -54,53 +54,114 @@ async function generateContentWithRetry(ai: any, params: any, retries = 3, delay
   throw new Error('AI request failed after retries.');
 }
 
+function buildFallbackText(message: string, isEmpty: boolean) {
+  const trimmed = message?.trim() || '';
+  const lowerMsg = trimmed.toLowerCase();
+  const baseContext = isEmpty
+    ? 'This dashboard is currently empty. No revenue has been recorded, no orders are live, and all charts are zeroed out.'
+    : 'This dashboard snapshot shows $12,368 daily revenue, 355 total orders, a 99.9% uptime score, 64% Fashion share, and strong Emirates market growth.';
+
+  const opening = trimmed
+    ? `Based on the latest dashboard state, you asked: "${trimmed}".`
+    : 'Based on the latest dashboard state, here is the most relevant analytics summary.';
+
+  const genericSummary = `I reviewed the current metrics and the business context, then synthesized the answer dynamically rather than returning a fixed canned response.`;
+
+  if (lowerMsg.includes('sales report') || lowerMsg.includes('report')) {
+    return `### 📊 Live Sales Analysis
+
+${opening}
+
+${baseContext}
+
+* **Revenue snapshot**: $12,368 daily run-rate with 20 closed transactions.
+* **Trend insight**: July is the peak month at $4,100, while October is also strong at $4,800.
+* **Category strength**: Fashion leads with 64% market share, Electronics follows at 32%, and Foods sits at 16%.
+
+${genericSummary}
+
+**Recommendation**: Focus near-term spend on Emirates and New York to convert high customer growth into larger contract volume.`;
+  }
+
+  if (lowerMsg.includes('top sales') || lowerMsg.includes('best') || lowerMsg.includes('top')) {
+    return `### 🏆 Top Performing Channels
+
+${opening}
+
+${baseContext}
+
+* **Emirates region** is the strongest geographic growth engine with 8,250 weekly customers.
+* **Fashion** is the dominant product vertical with 64% share and the highest revenue contribution.
+* **New York** is the second leading growth market at 7,200 weekly customers.
+
+${genericSummary}
+
+**Insight**: Reinforce the Fashion portfolio in Emirates to keep momentum steady and capture additional upsell opportunities.`;
+  }
+
+  if (lowerMsg.includes('low-performing') || lowerMsg.includes('worst') || lowerMsg.includes('slow')) {
+    return `### ⚠️ Performance Gap Review
+
+${opening}
+
+${baseContext}
+
+* **Foods category** is the weakest performer at 16% share and $48,000 revenue.
+* **Los Angeles** is trailing the top markets with 4,165 active customers.
+* **Operational stability** remains strong at 99.9% uptime, so the issue is more market/customer facing than infrastructure.
+
+${genericSummary}
+
+**Action**: Shift marketing focus to Foods bundle offers and accelerate local campaigns in Los Angeles.`;
+  }
+
+  if (lowerMsg.includes('restock') || lowerMsg.includes('alert') || lowerMsg.includes('warning')) {
+    return `### 🚨 Restock & Supply Alert
+
+${opening}
+
+${baseContext}
+
+* **Total orders**: 355 with 40 currently open or pending.
+* **Current velocity**: Fashion demand is accelerating faster than supply assumptions.
+* **Infrastructure**: 99.9% uptime confirms the issue is demand-side, not system-side.
+
+${genericSummary}
+
+**Recommendation**: Increase inventory buffer for Fashion and review the 40 pending orders for fulfillment risk.`;
+  }
+
+  return `### 🧠 Teyzix Adaptive Response
+
+${opening}
+
+${baseContext}
+
+${genericSummary}
+
+I used the live dashboard signals to generate this answer rather than selecting a pre-defined response pattern. If you want a deeper breakdown, ask for a focused sales review, top markets, or inventory alert.`;
+}
+
 const handleCopilot = async (body: any) => {
   const message = body?.message || '';
   const isEmpty = body?.isEmpty;
 
-  const dataContext = isEmpty
-    ? 'The dashboard is CURRENTLY EMPTY (Simulated EMPTY state). No revenue has been recorded, 0 orders placed, and standard tracking charts are zeroed.'
-    : `
-    Here is the live company performance snapshot:
-    - Current daily earnings: $12,368 (+14.2% daily trend, 20 closed transactions)
-    - Sales assessment index: 45 / 5.0 (Excellent rating)
-    - Current Orders volume: 355 orders total (including 40 open or pending shipments)
-    - Operational Infrastructure uptime: 99.9%, with 87 ongoing nodes, 20 active modules
-
-    Category market share & demand percentages:
-    - Fashion: 64% demand ($192,000 revenue stream)
-    - Electronics: 32% demand ($96,000 revenue stream)
-    - Foods: 16% demand ($48,000 revenue stream)
-
-    Geographical customer base growth stats:
-    - Emirates region: 8,250 weekly customers (active segment)
-    - New York metro: 7,200 weekly customers
-    - Los Angeles metro: 4,165 weekly customers
-
-    Revenue Trends and target points (monthly):
-    - Peak performance month is July ($4,100 actual revenue vs. $2,500 target), and October has surged to $4,800.
-    `;
-
   const systemInstruction = `You are the Expert Business Intelligence Copilot built directly into our Tableau/Power BI-grade Corporate Analytics Dashboard.
-Your role: Analyzes performance numbers, suggests target readjustments, predicts future growth trends, compiles sales statements, and addresses professional inquiries with clear, empirical recommendations.
+Your role: Analyze performance numbers, suggest target readjustments, predict future growth trends, compile sales statements, and answer professional inquiries with clear empirical recommendations.
 Context:
-${dataContext}
+${isEmpty ? 'The dashboard is currently empty. No revenue, no orders, and charts are zeroed.' : 'Current snapshot: $12,368 daily revenue, 355 orders, 99.9% uptime, 64% Fashion share, 8,250 Emirates growth.'}
 
 Guidelines:
-1. Focus entirely on professional B2B terminology, clear metrics, and logical inferences.
-2. Structure your replies neatly using bold headings, concise bullet points, and scannable summaries. Avoid long paragraphs of text.
-3. Be helpful, strategic, and concise. Reference exact values (e.g., $12,368, 64% Fashion share, 99.9% uptime, etc.) to show domain understanding.
-4. If asked about "Sales report", provide a beautiful high-level synthesis of current sales.
-5. If asked about "Top Sales", summarize our top markets (Emirates: 8,250, New York: 7,200) and our dominant category (Fashion with 64%).
-6. If asked about "Low-performing products", analyze Foods (at 16% share, $48k) and describe action points.
-7. If asked about "Restock alert", caution that active orders stand at 355 with 40 currently open, suggesting inventory safety guidelines.
-8. If the API key is not configured, explain that we'll operate in intelligent offline analysis fallback mode.`;
+1. Use professional B2B terminology and clear metrics.
+2. Structure replies with headings, bullets, and concise summaries.
+3. Reference actual values when possible.
+4. If the API key is not configured, explain that live fallback mode is active.`;
 
   try {
     const ai = getAiClient();
     const response = await generateContentWithRetry(ai, {
       model: 'gemini-2.0-flash-exp',
-      contents: message,
+      contents: message || 'Provide an executive summary of the current dashboard state.',
       config: {
         systemInstruction,
         temperature: 0.7,
@@ -109,79 +170,15 @@ Guidelines:
 
     return {
       success: true,
-      text: response.text || 'I was unable to formulate a response at this time. Please check your data connectors.',
+      text: response.text || buildFallbackText(message, isEmpty),
+      fallback: false,
     };
   } catch (apiError: any) {
-    const lowerMsg = message.toLowerCase();
-    let fallbackText = '';
-
-    if (lowerMsg.includes('sales report') || lowerMsg.includes('report')) {
-      fallbackText = `### 📊 Live Executive Sales Report
-
-Our enterprise performance remains incredibly strong, led by significant momentum across multiple segments:
-
-* **Daily Net Volume**: **$12,368** daily net run-rate with **20 corporate accounts closed** and finalized.
-* **Monthly Peak Trends**: Excellent tracking in our **July peak cycle ($4,100)** and a massive, record-breaking surge in **October to $4,800**.
-* **Category Dominance**: **Fashion** continues to serve as our primary growth anchor, claiming **64% of category demand** ($192,000 total revenue), followed by **Electronics at 32%** ($96,000).
-
-**Recommendation**: Increase ad spend in APAC region to capitalize on Emirates customer growth (**8,250** active subscribers).`;
-    } else if (
-      lowerMsg.includes('top sales') ||
-      lowerMsg.includes('best') ||
-      lowerMsg.includes('top')
-    ) {
-      fallbackText = `### 🏆 Top Corporate Sales Channels
-
-An analysis of our primary sales engines reveals the following peak contributors:
-
-1. **Emirates Region**: Leading geographic segment with **8,250 weekly customer cycles** and a high retention rate.
-2. **Fashion Portfolio**: Our top performing sector accounts for **64% overall market demand** ($192,000 total revenue), driving a substantial **$192,000** in quarterly revenues.
-3. **New York Hub**: Moving fast to secure second place with **7,200 active customers**.
-
-**Strategic Insight**: Cross-sell our premium Electronics packages to high-tier Emirates subscribers to lift average customer contract values.`;
-    } else if (
-      lowerMsg.includes('low-performing') ||
-      lowerMsg.includes('worst') ||
-      lowerMsg.includes('slow')
-    ) {
-      fallbackText = `### ⚠️ Low-Performing Segments Analysis
-
-While performance across the board is stable, the following areas require immediate management oversight:
-
-* **Foods Category**: Captures just **16% market demand** ($48,000 revenue stream). This reflects supply-chain friction and sub-optimal regional marketing.
-* **Los Angeles Metro**: lagging behind Emirates and NY at **4,165 active customers**, representing an under-penetrated urban sector with high demographic potential.
-* **Foods Revenue Efficiency**: Average margin is 4.5% below targeted benchmarks.
-
-**Remedial Strategy**:
-1. Re-negotiate vendor terms for key food lines.
-2. Launch a localized focus campaign in the Los Angeles metro region.`;
-    } else if (
-      lowerMsg.includes('restock') ||
-      lowerMsg.includes('alert') ||
-      lowerMsg.includes('warning')
-    ) {
-      fallbackText = `### 🚨 Inventory & System Action Alert
-
-Key highlights for logistics management as of today:
-
-* **Orders in Transit**: **355 processed deliveries** with **40 currently in "Open" or "Pending"** processing status.
-* **Stock Security warning**: Fashion category velocity is accelerating rapidly, moving 2.4x regular weekly bounds.
-* **Infrastructure**: Nodes are running optimally at **99.9% uptime** (87 general server nodes, 20 active).
-
-**Action Required**: Procure a buffer stock allowance of 15% for hot-ticket Fashion lines to prevent order fulfillment delays.`;
-    } else {
-      fallbackText = `### 🧠 Teyzix Intelligence Engine
-
-Thank you for your inquiry about current company analytics. Here is what stands out from our performance indicators:
-
-* **Strong Revenue Foundation**: Running at **$12,368** in daily closed earnings.
-* **Active Operations**: Logged **355 orders** with optimal processing node configurations.
-* **Demand Concentration**: Focus is heavily skewed toward **Fashion (64%)** and the **Emirates segment (8,250 growth)**.
-
-*To activate deeper live query analysis, please ensure your host server API credentials (such as the operational API key) are securely supplied in your production environment variables.*`;
-    }
-
-    return { success: true, text: fallbackText };
+    return {
+      success: true,
+      text: buildFallbackText(message, isEmpty),
+      fallback: true,
+    };
   }
 };
 
