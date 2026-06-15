@@ -1,157 +1,8 @@
 import dotenv from 'dotenv';
+import { GoogleGenAI } from '@google/genai';
+import { getBaseDashboardData, emptyDashboardData } from '../src/mockData.js';
 
 dotenv.config();
-
-const getBaseDashboardData = () => ({
-  kpis: {
-    revenue: {
-      id: 'revenue',
-      title: 'Total Revenue',
-      value: '$12.4k',
-      countLabel: 'Monthly',
-      subValue: '+14.8%',
-      icon: 'trending-up',
-      trend: 'up',
-    },
-    assessment: {
-      id: 'assessment',
-      title: 'Business Score',
-      value: 'A+',
-      countLabel: 'Rating',
-      subValue: 'Stable',
-      icon: 'shield-check',
-      trend: 'neutral',
-    },
-    orders: {
-      id: 'orders',
-      title: 'Purchase Orders',
-      value: '355',
-      countLabel: 'This month',
-      subValue: '3.2% above target',
-      icon: 'shopping-bag',
-      trend: 'up',
-    },
-    connection: {
-      id: 'connection',
-      title: 'System Connection',
-      value: '99.9%',
-      countLabel: 'Uptime',
-      subValue: 'Secure',
-      icon: 'server',
-      trend: 'up',
-    },
-  },
-  revenueTrend: [
-    { month: 'Jan', revenue: 3200, target: 3100 },
-    { month: 'Feb', revenue: 4100, target: 3800 },
-    { month: 'Mar', revenue: 3850, target: 4000 },
-    { month: 'Apr', revenue: 4700, target: 4500 },
-    { month: 'May', revenue: 5200, target: 5000 },
-  ],
-  salesComparison: [
-    { region: 'North America', min: 1200, max: 5200, average: 3400 },
-    { region: 'Europe', min: 950, max: 4300, average: 2750 },
-    { region: 'Asia Pacific', min: 800, max: 3800, average: 2400 },
-  ],
-  categoryDistribution: [
-    { category: 'Fashion', percentage: 43, color: '#6366F1', revenue: 5280 },
-    { category: 'Electronics', percentage: 33, color: '#14B8A6', revenue: 4030 },
-    { category: 'Foods', percentage: 24, color: '#F97316', revenue: 2940 },
-  ],
-  customerGrowth: [
-    { location: 'North America', value: 12, percentage: 12, color: '#22C55E' },
-    { location: 'Europe', value: 9, percentage: 9, color: '#38BDF8' },
-    { location: 'Asia Pacific', value: 16, percentage: 16, color: '#A855F7' },
-  ],
-  weeklyRevenue: [
-    { day: 'Mon', revenue: 780, target: 740 },
-    { day: 'Tue', revenue: 860, target: 800 },
-    { day: 'Wed', revenue: 920, target: 880 },
-    { day: 'Thu', revenue: 1030, target: 950 },
-    { day: 'Fri', revenue: 1130, target: 1080 },
-    { day: 'Sat', revenue: 980, target: 930 },
-    { day: 'Sun', revenue: 870, target: 840 },
-  ],
-  recentTransactions: [
-    {
-      id: 'TX1001',
-      name: 'Apex Retail Group',
-      revenue: 1220,
-      orders: 34,
-      status: 'Active',
-      region: 'North America',
-      date: '2026-05-28',
-      avatar: 'AR',
-    },
-    {
-      id: 'TX1002',
-      name: 'Orion Electronics',
-      revenue: 980,
-      orders: 27,
-      status: 'Pending',
-      region: 'Europe',
-      date: '2026-05-29',
-      avatar: 'OE',
-    },
-    {
-      id: 'TX1003',
-      name: 'Helix Logistics',
-      revenue: 760,
-      orders: 19,
-      status: 'Active',
-      region: 'Asia Pacific',
-      date: '2026-05-30',
-      avatar: 'HL',
-    },
-  ],
-});
-
-const emptyDashboardData = () => ({
-  kpis: {
-    revenue: {
-      id: 'revenue',
-      title: 'Total Revenue',
-      value: '$0',
-      countLabel: 'Monthly',
-      subValue: 'No activity',
-      icon: 'trending-up',
-      trend: 'neutral',
-    },
-    assessment: {
-      id: 'assessment',
-      title: 'Business Score',
-      value: 'N/A',
-      countLabel: 'Rating',
-      subValue: 'No data',
-      icon: 'shield-check',
-      trend: 'neutral',
-    },
-    orders: {
-      id: 'orders',
-      title: 'Purchase Orders',
-      value: '0',
-      countLabel: 'This month',
-      subValue: 'No orders',
-      icon: 'shopping-bag',
-      trend: 'neutral',
-    },
-    connection: {
-      id: 'connection',
-      title: 'System Connection',
-      value: '100%',
-      countLabel: 'Uptime',
-      subValue: 'Stable',
-      icon: 'server',
-      trend: 'up',
-    },
-  },
-  revenueTrend: [],
-  salesComparison: [],
-  categoryDistribution: [],
-  customerGrowth: [],
-  weeklyRevenue: [],
-  recentTransactions: [],
-});
 
 const handleDashboardData = (query: Record<string, any> | undefined) => {
   const requestEmpty = query?.empty === 'true';
@@ -161,10 +12,177 @@ const handleDashboardData = (query: Record<string, any> | undefined) => {
   return getBaseDashboardData();
 };
 
+function getAiClient(): GoogleGenAI {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key || key === 'MY_GEMINI_API_KEY') {
+    throw new Error('GEMINI_API_KEY environment variable is not configured.');
+  }
+
+  return new GoogleGenAI({
+    apiKey: key,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
+}
+
+async function generateContentWithRetry(ai: any, params: any, retries = 3, delay = 500) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await ai.models.generateContent(params);
+    } catch (err: any) {
+      const errMsg = err?.message || '';
+      const isTransient =
+        err?.status === 503 ||
+        err?.statusCode === 503 ||
+        errMsg.includes('503') ||
+        errMsg.includes('UNAVAILABLE') ||
+        err?.status === 429 ||
+        errMsg.includes('429') ||
+        errMsg.includes('Too Many Requests');
+
+      if (isTransient && attempt < retries) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 2;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('AI request failed after retries.');
+}
+
 const handleCopilot = async (body: any) => {
   const message = body?.message || '';
-  const fallback = `### Analytics Response\n\nYou asked: "${message}"\n\nCurrent metrics: Revenue $12,368, Orders 355.`;
-  return { success: true, text: fallback };
+  const isEmpty = body?.isEmpty;
+
+  const dataContext = isEmpty
+    ? 'The dashboard is CURRENTLY EMPTY (Simulated EMPTY state). No revenue has been recorded, 0 orders placed, and standard tracking charts are zeroed.'
+    : `
+    Here is the live company performance snapshot:
+    - Current daily earnings: $12,368 (+14.2% daily trend, 20 closed transactions)
+    - Sales assessment index: 45 / 5.0 (Excellent rating)
+    - Current Orders volume: 355 orders total (including 40 open or pending shipments)
+    - Operational Infrastructure uptime: 99.9%, with 87 ongoing nodes, 20 active modules
+
+    Category market share & demand percentages:
+    - Fashion: 64% demand ($192,000 revenue stream)
+    - Electronics: 32% demand ($96,000 revenue stream)
+    - Foods: 16% demand ($48,000 revenue stream)
+
+    Geographical customer base growth stats:
+    - Emirates region: 8,250 weekly customers (active segment)
+    - New York metro: 7,200 weekly customers
+    - Los Angeles metro: 4,165 weekly customers
+
+    Revenue Trends and target points (monthly):
+    - Peak performance month is July ($4,100 actual revenue vs. $2,500 target), and October has surged to $4,800.
+    `;
+
+  const systemInstruction = `You are the Expert Business Intelligence Copilot built directly into our Tableau/Power BI-grade Corporate Analytics Dashboard.
+Your role: Analyzes performance numbers, suggests target readjustments, predicts future growth trends, compiles sales statements, and addresses professional inquiries with clear, empirical recommendations.
+Context:
+${dataContext}
+
+Guidelines:
+1. Focus entirely on professional B2B terminology, clear metrics, and logical inferences.
+2. Structure your replies neatly using bold headings, concise bullet points, and scannable summaries. Avoid long paragraphs of text.
+3. Be helpful, strategic, and concise. Reference exact values (e.g., $12,368, 64% Fashion share, 99.9% uptime, etc.) to show domain understanding.
+4. If asked about "Sales report", provide a beautiful high-level synthesis of current sales.
+5. If asked about "Top Sales", summarize our top markets (Emirates: 8,250, New York: 7,200) and our dominant category (Fashion with 64%).
+6. If asked about "Low-performing products", analyze Foods (at 16% share, $48k) and describe action points.
+7. If asked about "Restock alert", caution that active orders stand at 355 with 40 currently open, suggesting inventory safety guidelines.
+8. If the API key is not configured, explain that we'll operate in intelligent offline analysis fallback mode.`;
+
+  try {
+    const ai = getAiClient();
+    const response = await generateContentWithRetry(ai, {
+      model: 'gemini-2.0-flash-exp',
+      contents: message,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      },
+    });
+
+    return {
+      success: true,
+      text: response.text || 'I was unable to formulate a response at this time. Please check your data connectors.',
+    };
+  } catch (apiError: any) {
+    const lowerMsg = message.toLowerCase();
+    let fallbackText = '';
+
+    if (lowerMsg.includes('sales report') || lowerMsg.includes('report')) {
+      fallbackText = `### 📊 Live Executive Sales Report
+
+Our enterprise performance remains incredibly strong, led by significant momentum across multiple segments:
+
+* **Daily Net Volume**: **$12,368** daily net run-rate with **20 corporate accounts closed** and finalized.
+* **Monthly Peak Trends**: Excellent tracking in our **July peak cycle ($4,100)** and a massive, record-breaking surge in **October to $4,800**.
+* **Category Dominance**: **Fashion** continues to serve as our primary growth anchor, claiming **64% of category demand** ($192,000 total revenue), followed by **Electronics at 32%** ($96,000).
+
+**Recommendation**: Increase ad spend in APAC region to capitalize on Emirates customer growth (**8,250** active subscribers).`;
+    } else if (
+      lowerMsg.includes('top sales') ||
+      lowerMsg.includes('best') ||
+      lowerMsg.includes('top')
+    ) {
+      fallbackText = `### 🏆 Top Corporate Sales Channels
+
+An analysis of our primary sales engines reveals the following peak contributors:
+
+1. **Emirates Region**: Leading geographic segment with **8,250 weekly customer cycles** and a high retention rate.
+2. **Fashion Portfolio**: Our top performing sector accounts for **64% overall market demand** ($192,000 total revenue), driving a substantial **$192,000** in quarterly revenues.
+3. **New York Hub**: Moving fast to secure second place with **7,200 active customers**.
+
+**Strategic Insight**: Cross-sell our premium Electronics packages to high-tier Emirates subscribers to lift average customer contract values.`;
+    } else if (
+      lowerMsg.includes('low-performing') ||
+      lowerMsg.includes('worst') ||
+      lowerMsg.includes('slow')
+    ) {
+      fallbackText = `### ⚠️ Low-Performing Segments Analysis
+
+While performance across the board is stable, the following areas require immediate management oversight:
+
+* **Foods Category**: Captures just **16% market demand** ($48,000 revenue stream). This reflects supply-chain friction and sub-optimal regional marketing.
+* **Los Angeles Metro**: lagging behind Emirates and NY at **4,165 active customers**, representing an under-penetrated urban sector with high demographic potential.
+* **Foods Revenue Efficiency**: Average margin is 4.5% below targeted benchmarks.
+
+**Remedial Strategy**:
+1. Re-negotiate vendor terms for key food lines.
+2. Launch a localized focus campaign in the Los Angeles metro region.`;
+    } else if (
+      lowerMsg.includes('restock') ||
+      lowerMsg.includes('alert') ||
+      lowerMsg.includes('warning')
+    ) {
+      fallbackText = `### 🚨 Inventory & System Action Alert
+
+Key highlights for logistics management as of today:
+
+* **Orders in Transit**: **355 processed deliveries** with **40 currently in "Open" or "Pending"** processing status.
+* **Stock Security warning**: Fashion category velocity is accelerating rapidly, moving 2.4x regular weekly bounds.
+* **Infrastructure**: Nodes are running optimally at **99.9% uptime** (87 general server nodes, 20 active).
+
+**Action Required**: Procure a buffer stock allowance of 15% for hot-ticket Fashion lines to prevent order fulfillment delays.`;
+    } else {
+      fallbackText = `### 🧠 Teyzix Intelligence Engine
+
+Thank you for your inquiry about current company analytics. Here is what stands out from our performance indicators:
+
+* **Strong Revenue Foundation**: Running at **$12,368** in daily closed earnings.
+* **Active Operations**: Logged **355 orders** with optimal processing node configurations.
+* **Demand Concentration**: Focus is heavily skewed toward **Fashion (64%)** and the **Emirates segment (8,250 growth)**.
+
+*To activate deeper live query analysis, please ensure your host server API credentials (such as the operational API key) are securely supplied in your production environment variables.*`;
+    }
+
+    return { success: true, text: fallbackText };
+  }
 };
 
 export default async function handler(req: any, res: any) {
