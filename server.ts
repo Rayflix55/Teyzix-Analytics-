@@ -5,15 +5,19 @@
 
 import express from "express";
 import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { getBaseDashboardData, emptyDashboardData } from "./src/mockData.js";
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
@@ -46,7 +50,6 @@ app.get("/api/dashboard-data", async (req, res) => {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
 
-    // Simulate Server-side Error if requested
     if (triggerError) {
       return res.status(500).json({
         success: false,
@@ -70,7 +73,6 @@ app.get("/api/dashboard-data", async (req, res) => {
   }
 });
 
-// 2. Server-side Gemini BI AI Copilot API
 async function generateContentWithRetry(
   ai: any,
   params: any,
@@ -155,7 +157,7 @@ Guidelines:
       const ai = getAiClient();
 
       const response = await generateContentWithRetry(ai, {
-        model: "gemini-3.5-flash",
+        model: "gemini-2.0-flash-exp",
         contents: message,
         config: {
           systemInstruction,
@@ -249,28 +251,24 @@ Thank you for your inquiry about current company analytics. Here is what stands 
       .json({ success: false, message: "Copilot error: " + err.message });
   }
 });
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
 
-  if (!process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server is running at http://localhost:${PORT}/`);
-    });
-  }
+if (process.env.NODE_ENV === "production") {
+  const distPath = path.join(__dirname, "dist");
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
 }
 
-startServer();
+// Only start server locally (not on Vercel)
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  app.listen(Number(PORT), "0.0.0.0", () => {
+    console.log(`✅ Server running at http://localhost:${PORT}/`);
+    console.log(
+      `📊 Dashboard API: http://localhost:${PORT}/api/dashboard-data`,
+    );
+    console.log(`🤖 Copilot API: http://localhost:${PORT}/api/copilot`);
+  });
+}
 
 export default app;
