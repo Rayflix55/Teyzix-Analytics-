@@ -42,7 +42,7 @@ Initiate the Express proxy backend and Vite frontend pipelines simultaneously:
 npm run dev
 ```
 
-Open your browser and navigate to **`http://localhost:3000`**.
+Open your browser and navigate to **`http://localhost:3000/`**.
 
 ---
 

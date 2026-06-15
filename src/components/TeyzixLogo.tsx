@@ -82,55 +82,79 @@ export default function TeyzixLogo({
           className="text-zinc-200/40 dark:text-zinc-800/60"
         />
 
-        {/* Isometric interlocking ribbons to create the letter 'T' */}
-        {/* Left top horizontal arm facet of 'T' */}
+        {/* Isometric interlocking ribbons to create a perfect symmetrical, 3D premium industrial 'T' */}
+        {/* 1. Flat Top Cap Surface of the T Crossbar */}
         <polygon
-          points="24,34 58,48 58,36 24,22"
-          fill="url(#tz-grad-cyan-indigo)"
-        />
-
-        {/* Right top horizontal arm facet of 'T' */}
-        <polygon
-          points="58,48 96,34 96,22 58,36"
-          fill="url(#tz-grad-cyan-indigo)"
-          opacity="0.9"
-        />
-
-        {/* Central stem prism column of 'T' - Left face */}
-        <polygon
-          points="52,48 52,94 36,84 36,38"
-          fill="url(#tz-grad-cyan-indigo)"
-          opacity="0.8"
-        />
-
-        {/* Central stem prism column of 'T' - Right face */}
-        <polygon
-          points="52,48 68,38 68,84 52,94"
-          fill="url(#tz-grad-amber-rose)"
-        />
-
-        {/* Top Flat Surface Hex-Head */}
-        <polygon
-          points="58,36 82,26 58,16 34,26"
+          points="60,14 96,26 60,38 24,26"
           fill="url(#tz-grad-cyan-indigo)"
           opacity="0.95"
+          id="teyzix-logo-top-cap"
+        />
+
+        {/* 2. Left Front Face of the T Crossbar (Shadow Side) */}
+        <polygon
+          points="24,26 60,38 60,50 24,38"
+          fill="url(#tz-grad-cyan-indigo)"
+          opacity="0.75"
+          id="teyzix-logo-left-arm"
+        />
+
+        {/* 3. Right Front Face of the T Crossbar (Light Side) */}
+        <polygon
+          points="60,38 96,26 96,38 60,50"
+          fill="url(#tz-grad-cyan-indigo)"
+          opacity="0.95"
+          id="teyzix-logo-right-arm"
+        />
+
+        {/* 4. Vertical Stem of the 'T' - Left Shadow Face */}
+        <polygon
+          points="48,46 60,50 60,96 48,92"
+          fill="url(#tz-grad-cyan-indigo)"
+          opacity="0.65"
+          id="teyzix-logo-stem-left"
+        />
+
+        {/* 5. Vertical Stem of the 'T' - Right Illuminated Amber/Rose Face */}
+        <polygon
+          points="60,50 72,46 72,92 60,96"
+          fill="url(#tz-grad-amber-rose)"
+          opacity="0.9"
+          id="teyzix-logo-stem-right"
+        />
+
+        {/* Dynamic laser path indicator running down the spine */}
+        <line
+          x1="60"
+          y1="50"
+          x2="60"
+          y2="95"
+          stroke="#22d3ee"
+          strokeWidth="1.5"
+          strokeDasharray="3 3"
+          opacity="0.8"
+          id="teyzix-logo-laser"
         />
 
         {/* Upper glass highlight streak */}
         <path
-          d="M 28,26 L 58,38 L 88,26"
+          d="M 28,27 L 60,39 L 92,27"
           stroke="url(#tz-glass-sheen)"
-          strokeWidth="2.5"
+          strokeWidth="2"
           strokeLinecap="round"
+          id="teyzix-logo-sheen"
         />
 
-        {/* Central core node sensor representing precision data */}
+        {/* Central glowing core node representing real-time system synchronization */}
+        <circle cx="60" cy="38" r="4" fill="#06b6d4" id="teyzix-logo-sensor" />
         <circle
           cx="60"
-          cy="42"
-          r="4.5"
-          fill="#10b981"
-          className="animate-pulse shadow-sm"
+          cy="38"
+          r="8"
+          fill="#22d3ee"
+          opacity="0.25"
+          className="animate-ping"
+          id="teyzix-logo-glowing-ring"
         />
       </svg>
     </div>
