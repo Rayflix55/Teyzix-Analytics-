@@ -131,3 +131,4 @@ During the development of Teyzix Analytics, several intentional engineering choi
 | `npm run build` | Bundles static frontend to `/dist` and compiles standalone server to `dist/server.cjs` |
 | `npm run start` | Launches compiled production server using native lightweight Node                      |
 | `npm run lint`  | Runs the TypeScript compiler check to verify code integrity                            |
+<!-- temp -->
