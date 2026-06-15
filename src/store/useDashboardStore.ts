@@ -207,7 +207,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         );
       }
 
-      const dashboardPayload = await res.json();
+      const json = await res.json();
+      const dashboardPayload = json?.data ?? json;
       set({ data: dashboardPayload, isLoading: false });
     } catch (err: any) {
       set({ error: err.message, isLoading: false, data: null });
